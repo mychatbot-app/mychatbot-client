@@ -1,5 +1,9 @@
+export type ConnectionType = "websocket" | "webrtc";
+
 export type CallsConfig = {
   agentId: string;
+  /** Connection type. Defaults to "websocket". Use "websocket" for audio visualization support. */
+  connectionType?: ConnectionType;
 };
 
 export type StartOptions = {

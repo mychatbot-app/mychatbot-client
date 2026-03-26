@@ -81,7 +81,7 @@ export class MyChatBotCalls {
     try {
       this.conversation = await Conversation.startSession({
         agentId: this.config.agentId,
-        connectionType: "webrtc",
+        connectionType: this.config.connectionType || "websocket",
         userId: callerId,
         dynamicVariables: opts?.dynamicVariables,
         onConnect: (props: { conversationId: string }) => {

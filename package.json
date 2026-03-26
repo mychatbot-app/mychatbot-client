@@ -1,6 +1,6 @@
 {
   "name": "@mychatbot/client",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MyChatBot Client SDK — voice calls powered by ElevenLabs",
   "license": "MIT",
   "main": "dist/index.cjs",
