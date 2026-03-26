@@ -14,6 +14,7 @@ export class MyChatBotCalls {
   private conversation: Conversation | null = null;
   private currentStatus: CallStatus = "idle";
   private micMuted = false;
+  private currentlySpeaking = false;
   private listeners: Map<CallEvent, Set<CallEventCallback<any>>> = new Map();
 
   constructor(config: CallsConfig) {
@@ -29,6 +30,10 @@ export class MyChatBotCalls {
 
   get muted(): boolean {
     return this.micMuted;
+  }
+
+  get isSpeaking(): boolean {
+    return this.currentlySpeaking;
   }
 
   private emit<E extends CallEvent>(
@@ -78,12 +83,14 @@ export class MyChatBotCalls {
         agentId: this.config.agentId,
         connectionType: "webrtc",
         userId: callerId,
+        dynamicVariables: opts?.dynamicVariables,
         onConnect: (props: { conversationId: string }) => {
           this.setStatus("connected");
           this.emit("connect", props);
         },
         onDisconnect: (details: any) => {
           this.setStatus("idle");
+          this.currentlySpeaking = false;
           this.conversation = null;
           this.emit("disconnect", {
             reason: details?.reason || "unknown",
@@ -93,6 +100,7 @@ export class MyChatBotCalls {
           this.emit("error", { message });
         },
         onModeChange: (props: { mode: "speaking" | "listening" }) => {
+          this.currentlySpeaking = props.mode === "speaking";
           this.emit("modeChange", props);
         },
         onMessage: (props: { message: string; source: string }) => {
@@ -120,6 +128,7 @@ export class MyChatBotCalls {
       // endSession may throw if already disconnected
     }
     this.conversation = null;
+    this.currentlySpeaking = false;
     this.setStatus("idle");
   }
 
@@ -127,6 +136,16 @@ export class MyChatBotCalls {
     if (!this.conversation) return;
     this.micMuted = !this.micMuted;
     this.conversation.setMicMuted(this.micMuted);
+  }
+
+  /** Raw output (agent) audio frequency data for visualization. */
+  getOutputByteFrequencyData(): Uint8Array | undefined {
+    return this.conversation?.getOutputByteFrequencyData();
+  }
+
+  /** Raw input (user mic) audio frequency data for visualization. */
+  getInputByteFrequencyData(): Uint8Array | undefined {
+    return this.conversation?.getInputByteFrequencyData();
   }
 
   on<E extends CallEvent>(event: E, callback: CallEventCallback<E>): void {

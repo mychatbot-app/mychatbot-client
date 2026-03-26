@@ -4,6 +4,7 @@ export type CallsConfig = {
 
 export type StartOptions = {
   callerId?: string;
+  dynamicVariables?: Record<string, string | number | boolean>;
 };
 
 export type CallStatus =
