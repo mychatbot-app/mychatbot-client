@@ -1,0 +1,43 @@
+{
+  "name": "@mychatbot/client",
+  "version": "0.1.0",
+  "description": "MyChatBot Client SDK — voice calls powered by ElevenLabs",
+  "license": "MIT",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@elevenlabs/client": "^0.4.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mychatbot-app/mychatbot-client"
+  },
+  "keywords": [
+    "mychatbot",
+    "voice",
+    "calls",
+    "elevenlabs",
+    "ai",
+    "sdk"
+  ]
+}
