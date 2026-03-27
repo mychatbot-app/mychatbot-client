@@ -83,7 +83,10 @@ export class MyChatBotCalls {
         agentId: this.config.agentId,
         connectionType: this.config.connectionType || "websocket",
         userId: callerId,
-        dynamicVariables: opts?.dynamicVariables,
+        dynamicVariables: {
+          user_id: callerId,
+          ...opts?.dynamicVariables,
+        },
         onConnect: (props: { conversationId: string }) => {
           this.setStatus("connected");
           this.emit("connect", props);
