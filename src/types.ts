@@ -4,6 +4,8 @@ export type CallsConfig = {
   agentId: string;
   /** Connection type. Defaults to "websocket". Use "websocket" for audio visualization support. */
   connectionType?: ConnectionType;
+  /** API URL for session registration. Defaults to "https://api.mychatbot.app". */
+  apiUrl?: string;
 };
 
 export type StartOptions = {

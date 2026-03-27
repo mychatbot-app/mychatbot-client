@@ -78,6 +78,22 @@ export class MyChatBotCalls {
       return;
     }
 
+    // Pre-register the session so chat/client records exist for MCP tools
+    try {
+      const apiUrl = this.config.apiUrl || "https://api.mychatbot.app";
+      await fetch(`${apiUrl}/calls/register-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agent_id: this.config.agentId,
+          caller_id: callerId,
+        }),
+      });
+    } catch (e) {
+      console.warn("[@mychatbot/client] Failed to register session:", e);
+      // Non-fatal: the call can still proceed, MCP tools may not work on first call
+    }
+
     try {
       this.conversation = await Conversation.startSession({
         agentId: this.config.agentId,
