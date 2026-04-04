@@ -78,10 +78,13 @@ export class MyChatBotCalls {
       return;
     }
 
-    // Pre-register the session so chat/client records exist for MCP tools
+    // Pre-register the session so chat/client records exist for MCP tools.
+    // The response includes client_context which we inject as a dynamic variable
+    // since ElevenLabs does not fire the initiation webhook for WebSDK calls.
+    let serverDynVars: Record<string, string> = {};
     try {
       const apiUrl = this.config.apiUrl || "https://api.mychatbot.app";
-      await fetch(`${apiUrl}/calls/register-session`, {
+      const res = await fetch(`${apiUrl}/calls/register-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -89,6 +92,12 @@ export class MyChatBotCalls {
           caller_id: callerId,
         }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.client_context) {
+          serverDynVars.client_context = data.client_context;
+        }
+      }
     } catch (e) {
       console.warn("[@mychatbot/client] Failed to register session:", e);
       // Non-fatal: the call can still proceed, MCP tools may not work on first call
@@ -101,6 +110,7 @@ export class MyChatBotCalls {
         userId: callerId,
         dynamicVariables: {
           user_id: callerId,
+          ...serverDynVars,
           ...opts?.dynamicVariables,
         },
         onConnect: (props: { conversationId: string }) => {
