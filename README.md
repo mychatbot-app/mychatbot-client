@@ -83,7 +83,7 @@ Subscribe to or unsubscribe from events.
 
 ### Client Tools
 
-Register client-side tools that the agent can invoke during a call. Tools are automatically synced to ElevenLabs — no dashboard setup needed. On subsequent calls with the same tool set, the sync is skipped (hash-based caching).
+Register client-side tools that the agent can invoke during a call.
 
 ```ts
 await calls.start({
