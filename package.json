@@ -1,7 +1,7 @@
 {
   "name": "@mychatbot/client",
-  "version": "0.4.2",
-  "description": "MyChatBot Client SDK — voice calls powered by ElevenLabs",
+  "version": "0.4.3",
+  "description": "MyChatBot Client SDK — voice calls for MyChatBot agents",
   "license": "MIT",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -36,7 +36,7 @@
     "mychatbot",
     "voice",
     "calls",
-    "elevenlabs",
+    "voice",
     "ai",
     "sdk"
   ]

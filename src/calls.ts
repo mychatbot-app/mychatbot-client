@@ -90,9 +90,9 @@ export class MyChatBotCalls {
     }
 
     // Pre-register the session so chat/client records exist for MCP tools.
-    // Also sends client tool definitions for auto-sync with ElevenLabs.
+    // Also sends client tool definitions for auto-sync.
     // The response includes client_context which we inject as a dynamic variable
-    // since ElevenLabs does not fire the initiation webhook for WebSDK calls.
+    // since the initiation webhook is not fired for WebSDK calls.
     let serverDynVars: Record<string, string> = {};
     try {
       const apiUrl = this.config.apiUrl || "https://api.mychatbot.app";
@@ -119,7 +119,7 @@ export class MyChatBotCalls {
       // Non-fatal: the call can still proceed, MCP tools may not work on first call
     }
 
-    // Build ElevenLabs clientTools handler map from our ClientTools definitions.
+    // Build clientTools handler map from our ClientTools definitions.
     const elClientTools: Record<string, (params: any) => Promise<any> | any> =
       {};
     if (clientTools) {
