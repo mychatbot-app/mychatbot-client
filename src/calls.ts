@@ -7,6 +7,7 @@ import type {
   CallEvent,
   CallEventCallback,
   CallEventPayload,
+  ClientTools,
 } from "./types";
 
 export class MyChatBotCalls {
@@ -78,19 +79,34 @@ export class MyChatBotCalls {
       return;
     }
 
+    // Build client tool definitions for API registration (strip handlers).
+    const clientTools = opts?.clientTools;
+    let clientToolDefs: any[] | undefined;
+    if (clientTools && Object.keys(clientTools).length > 0) {
+      clientToolDefs = Object.entries(clientTools).map(([name, tool]) => ({
+        name,
+        ...tool.definition,
+      }));
+    }
+
     // Pre-register the session so chat/client records exist for MCP tools.
+    // Also sends client tool definitions for auto-sync with ElevenLabs.
     // The response includes client_context which we inject as a dynamic variable
     // since ElevenLabs does not fire the initiation webhook for WebSDK calls.
     let serverDynVars: Record<string, string> = {};
     try {
       const apiUrl = this.config.apiUrl || "https://api.mychatbot.app";
+      const body: Record<string, any> = {
+        agent_id: this.config.agentId,
+        caller_id: callerId,
+      };
+      if (clientToolDefs) {
+        body.client_tools = clientToolDefs;
+      }
       const res = await fetch(`${apiUrl}/calls/register-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agent_id: this.config.agentId,
-          caller_id: callerId,
-        }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const data = await res.json();
@@ -103,6 +119,15 @@ export class MyChatBotCalls {
       // Non-fatal: the call can still proceed, MCP tools may not work on first call
     }
 
+    // Build ElevenLabs clientTools handler map from our ClientTools definitions.
+    const elClientTools: Record<string, (params: any) => Promise<any> | any> =
+      {};
+    if (clientTools) {
+      for (const [name, tool] of Object.entries(clientTools)) {
+        elClientTools[name] = tool.handler;
+      }
+    }
+
     try {
       this.conversation = await Conversation.startSession({
         agentId: this.config.agentId,
@@ -113,6 +138,9 @@ export class MyChatBotCalls {
           ...serverDynVars,
           ...opts?.dynamicVariables,
         },
+        ...(Object.keys(elClientTools).length > 0 && {
+          clientTools: elClientTools,
+        }),
         onConnect: (props: { conversationId: string }) => {
           this.setStatus("connected");
           this.emit("connect", props);

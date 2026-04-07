@@ -11,6 +11,7 @@ export type CallsConfig = {
 export type StartOptions = {
   callerId?: string;
   dynamicVariables?: Record<string, string | number | boolean>;
+  clientTools?: ClientTools;
 };
 
 export type CallStatus =
@@ -39,3 +40,23 @@ export type CallEventPayload = {
 export type CallEventCallback<E extends CallEvent> = (
   payload: CallEventPayload[E]
 ) => void;
+
+export type ClientToolParameter = {
+  type: "string" | "number" | "boolean";
+  description: string;
+  required?: boolean;
+};
+
+export type ClientToolDefinition = {
+  description: string;
+  parameters?: Record<string, ClientToolParameter>;
+  expects_response?: boolean;
+};
+
+export type ClientTools = Record<
+  string,
+  {
+    definition: ClientToolDefinition;
+    handler: (params: any) => Promise<any> | any;
+  }
+>;

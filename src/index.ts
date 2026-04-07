@@ -8,4 +8,7 @@ export type {
   CallEvent,
   CallEventPayload,
   CallEventCallback,
+  ClientToolParameter,
+  ClientToolDefinition,
+  ClientTools,
 } from "./types";
