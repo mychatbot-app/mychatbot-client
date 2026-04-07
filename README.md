@@ -49,6 +49,8 @@ Starts a voice call. Requests microphone permission if not already granted.
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
 | `options.callerId` | `string` | No | Caller identifier. Defaults to `defaultCallerId()` if omitted |
+| `options.clientTools` | `ClientTools` | No | Client-side tools the agent can invoke (see below) |
+| `options.dynamicVariables` | `Record<string, string \| number \| boolean>` | No | Dynamic variables passed to the agent |
 
 ### `calls.stop()`
 
@@ -78,6 +80,49 @@ Subscribe to or unsubscribe from events.
 | `statusChange` | `{ status: CallStatus }` | Status changed |
 | `modeChange` | `{ mode: "speaking" \| "listening" }` | Agent started/stopped speaking |
 | `message` | `{ message: string, role: "user" \| "agent" }` | Transcript message |
+
+### Client Tools
+
+Register client-side tools that the agent can invoke during a call. Tools are automatically synced to ElevenLabs — no dashboard setup needed. On subsequent calls with the same tool set, the sync is skipped (hash-based caching).
+
+```ts
+await calls.start({
+  callerId: defaultCallerId(),
+  clientTools: {
+    getCustomerDetails: {
+      definition: {
+        description: "Fetches customer info from the browser",
+        parameters: {
+          customer_id: { type: "string", description: "The customer ID" },
+        },
+        expects_response: true, // default: true
+      },
+      handler: async ({ customer_id }) => {
+        const customer = await fetchCustomer(customer_id);
+        return { name: customer.name, plan: customer.plan };
+      },
+    },
+    showNotification: {
+      definition: {
+        description: "Shows a notification in the UI",
+        parameters: {
+          message: { type: "string", description: "Notification text" },
+        },
+        expects_response: false, // fire-and-forget
+      },
+      handler: ({ message }) => {
+        showToast(message);
+      },
+    },
+  },
+});
+```
+
+Each tool requires:
+- **`definition.description`** — tells the agent when to use the tool
+- **`definition.parameters`** — parameter schema (type: `"string"` | `"number"` | `"boolean"`, plus `description` and optional `required` flag)
+- **`definition.expects_response`** — whether the agent waits for the handler's return value (default: `true`)
+- **`handler`** — the function called when the agent invokes the tool
 
 ### `defaultCallerId()`
 
