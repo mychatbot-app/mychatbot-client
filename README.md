@@ -83,35 +83,91 @@ Subscribe to or unsubscribe from events.
 
 ### Client Tools
 
-Register client-side tools that the agent can invoke during a call.
+Register client-side tools that the agent can invoke during a call. The agent decides when to call each tool based on the conversation context.
 
 ```ts
 await calls.start({
   callerId: defaultCallerId(),
   clientTools: {
-    getCustomerDetails: {
+
+    // Search & filter items in the UI
+    searchItem: {
       definition: {
-        description: "Fetches customer info from the browser",
+        description: "Search for products or items by keyword",
         parameters: {
-          customer_id: { type: "string", description: "The customer ID" },
+          query: { type: "string", description: "Search query" },
         },
-        expects_response: true, // default: true
       },
-      handler: async ({ customer_id }) => {
-        const customer = await fetchCustomer(customer_id);
-        return { name: customer.name, plan: customer.plan };
+      handler: async ({ query }) => {
+        filterProducts(query);
       },
     },
-    showNotification: {
+
+    // Navigate to a specific page or product
+    navigateTo: {
       definition: {
-        description: "Shows a notification in the UI",
+        description: "Navigate to a product page by ID",
         parameters: {
-          message: { type: "string", description: "Notification text" },
+          product_id: { type: "number", description: "Product ID" },
+        },
+      },
+      handler: async ({ product_id }) => {
+        router.push(`/product/${product_id}`);
+      },
+    },
+
+    // Highlight important text on the page
+    highlightText: {
+      definition: {
+        description: "Highlight key specs or features on the page",
+        parameters: {
+          product_id: { type: "number", description: "Product ID" },
+          keywords: { type: "string", description: "Comma-separated keywords to highlight" },
         },
         expects_response: false, // fire-and-forget
       },
-      handler: ({ message }) => {
-        showToast(message);
+      handler: ({ product_id, keywords }) => {
+        highlightKeywords(product_id, keywords.split(","));
+      },
+    },
+
+    // Add item to cart
+    addToCartById: {
+      definition: {
+        description: "Add a product to the shopping cart",
+        parameters: {
+          product_id: { type: "number", description: "Product ID to add" },
+        },
+      },
+      handler: async ({ product_id }) => {
+        return cart.addItem(product_id); // returns confirmation
+      },
+    },
+
+    // Switch website color theme
+    changeTheme: {
+      definition: {
+        description: "Switch the website color theme",
+        parameters: {
+          theme: { type: "string", description: "'dark' or 'light'" },
+        },
+        expects_response: false,
+      },
+      handler: ({ theme }) => {
+        document.documentElement.className = theme;
+      },
+    },
+
+    // Apply a promo code
+    applyDiscountCode: {
+      definition: {
+        description: "Apply a promotional discount code to the order",
+        parameters: {
+          code: { type: "string", description: "Discount code" },
+        },
+      },
+      handler: async ({ code }) => {
+        return cart.applyDiscount(code); // returns true/false
       },
     },
   },
