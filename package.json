@@ -1,7 +1,7 @@
 {
   "name": "@mychatbot/client",
-  "version": "0.4.5",
-  "description": "MyChatBot Client SDK — voice calls for MyChatBot agents",
+  "version": "0.4.6",
+  "description": "Voice calling SDK for MyChatBot Sales Platform agents",
   "license": "MIT",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

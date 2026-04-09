@@ -1,17 +1,18 @@
 # @mychatbot/client
 
-Voice calling SDK for [MyChatBot](https://mychatbot.app) agents. Add a "Talk to Us" voice button to your website in minutes.
+Voice calling SDK for [MyChatBot Sales Platform](https://app.mychatbot.app) sales agents. Add a "Talk to Us" voice button to your website in minutes.
 
 ## Before You Install — Get Your Agent ID
 
-You need a MyChatBot agent to use this SDK. The fastest way:
+You'll need a sales agent from the **MyChatBot Sales Platform** (not to be confused with our separate Agents Platform). The fastest way to create one:
 
-1. Go to **[app.mychatbot.app/quick-start](https://app.mychatbot.app/quick-start)**
-2. Click **"Create a voice agent for my website"**
-3. Enter your website URL (and optional product feed URL)
-4. The Platform Wizard reads your site, creates a tailored voice agent, and returns your **agent ID** and a ready-to-paste snippet
+1. Go to **[app.mychatbot.app/quick-start](https://app.mychatbot.app/quick-start)** — this is the Sales Platform's onboarding wizard
+2. Sign up / log in (if you land on the Agents Platform by mistake, head back to `app.mychatbot.app`)
+3. Click **"Create a voice agent for my website"**
+4. Enter your website URL (and optional product feed URL)
+5. The Platform Wizard reads your site, creates a tailored sales agent, and returns your **agent ID** plus a ready-to-paste snippet
 
-The wizard does everything in one step — reads your business, writes instructions, sets up the voice agent, and creates a WebSDK Calls channel. You'll get back an agent ID that looks like `agent_xxxxxxxxxxxxxxxxxxxxxxxxxx` which you'll use below.
+The wizard does everything in one step — reads your business, writes instructions, sets up the voice sales agent, and creates a WebSDK Calls channel. You'll get back an agent ID that looks like `agent_xxxxxxxxxxxxxxxxxxxxxxxxxx` which you'll use below.
 
 ## Install
 
