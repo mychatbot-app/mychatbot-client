@@ -1,6 +1,17 @@
 # @mychatbot/client
 
-Voice calling SDK for [MyChatBot](https://mychatbot.app) agents.
+Voice calling SDK for [MyChatBot](https://mychatbot.app) agents. Add a "Talk to Us" voice button to your website in minutes.
+
+## Before You Install — Get Your Agent ID
+
+You need a MyChatBot agent to use this SDK. The fastest way:
+
+1. Go to **[app.mychatbot.app/quick-start](https://app.mychatbot.app/quick-start)**
+2. Click **"Create a voice agent for my website"**
+3. Enter your website URL (and optional product feed URL)
+4. The Platform Wizard reads your site, creates a tailored voice agent, and returns your **agent ID** and a ready-to-paste snippet
+
+The wizard does everything in one step — reads your business, writes instructions, sets up the voice agent, and creates a WebSDK Calls channel. You'll get back an agent ID that looks like `agent_xxxxxxxxxxxxxxxxxxxxxxxxxx` which you'll use below.
 
 ## Install
 
