@@ -6,7 +6,7 @@ Voice calling SDK for [MyChatBot Sales Platform](https://app.mychatbot.app) sale
 
 You'll need a sales agent from the **MyChatBot Sales Platform** (not to be confused with our separate Agents Platform). The fastest way to create one:
 
-1. Go to **[app.mychatbot.app/quick-start](https://app.mychatbot.app/quick-start)** — this is the Sales Platform's onboarding wizard
+1. Go to **[app.mychatbot.app/quick-start](https://app.mychatbot.app/quick-start?utm_source=npm&utm_medium=readme&utm_campaign=sdk)** — this is the Sales Platform's onboarding wizard
 2. Sign up / log in (if you land on the Agents Platform by mistake, head back to `app.mychatbot.app`)
 3. Click **"Create a voice agent for my website"**
 4. Enter your website URL (and optional product feed URL)
