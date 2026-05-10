@@ -31,7 +31,14 @@ export type CallEvent =
 export type CallEventPayload = {
   connect: { conversationId: string };
   disconnect: { reason: string };
-  error: { message: string };
+  error: {
+    /** Human-readable message. Falls back to a generic string when no underlying error is available. */
+    message: string;
+    /** Original Error.name when the error originated from a thrown Error/DOMException (e.g. "NotAllowedError", "TypeError"). */
+    name?: string;
+    /** Original thrown value, when available — lets consumers branch on the underlying cause. */
+    cause?: unknown;
+  };
   statusChange: { status: CallStatus };
   modeChange: { mode: "speaking" | "listening" };
   message: { message: string; role: "user" | "agent" };

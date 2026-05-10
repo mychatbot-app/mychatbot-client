@@ -73,9 +73,13 @@ export class MyChatBotCalls {
 
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
+    } catch (err: any) {
       this.setStatus("idle");
-      this.emit("error", { message: "Microphone access denied" });
+      this.emit("error", {
+        message: err?.message || "Microphone access denied",
+        name: err?.name,
+        cause: err,
+      });
       return;
     }
 
@@ -172,6 +176,8 @@ export class MyChatBotCalls {
       this.conversation = null;
       this.emit("error", {
         message: err?.message || "Failed to start call",
+        name: err?.name,
+        cause: err,
       });
     }
   }
