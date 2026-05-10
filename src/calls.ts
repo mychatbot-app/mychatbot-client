@@ -10,6 +10,54 @@ import type {
   ClientTools,
 } from "./types";
 
+/**
+ * Normalize anything thrown into the shape of the 'error' event payload.
+ * The underlying ElevenLabs client may reject with non-Error values — most
+ * notably a raw CloseEvent when the WebSocket fails (offline, server
+ * unreachable, etc.) — which would otherwise have no .message or .name and
+ * collapse to a useless generic string. Surface code/reason/type instead.
+ */
+function normalizeError(
+  err: unknown,
+  fallbackMessage: string
+): { message: string; name?: string; cause: unknown } {
+  if (err instanceof Error) {
+    return {
+      message: err.message || fallbackMessage,
+      name: err.name,
+      cause: err,
+    };
+  }
+  if (typeof CloseEvent !== "undefined" && err instanceof CloseEvent) {
+    const reason = err.reason ? `, ${err.reason}` : "";
+    return {
+      message: `WebSocket closed (code ${err.code}${reason})`,
+      name: "CloseEvent",
+      cause: err,
+    };
+  }
+  if (typeof Event !== "undefined" && err instanceof Event) {
+    return {
+      message: `${err.type} event`,
+      name: err.constructor?.name || "Event",
+      cause: err,
+    };
+  }
+  if (typeof err === "string") {
+    return { message: err || fallbackMessage, cause: err };
+  }
+  if (err && typeof err === "object") {
+    const anyErr = err as { message?: unknown; name?: unknown };
+    const message =
+      typeof anyErr.message === "string" && anyErr.message
+        ? anyErr.message
+        : fallbackMessage;
+    const name = typeof anyErr.name === "string" ? anyErr.name : undefined;
+    return { message, name, cause: err };
+  }
+  return { message: fallbackMessage, cause: err };
+}
+
 export class MyChatBotCalls {
   private config: CallsConfig;
   private conversation: Conversation | null = null;
@@ -73,13 +121,9 @@ export class MyChatBotCalls {
 
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       this.setStatus("idle");
-      this.emit("error", {
-        message: err?.message || "Microphone access denied",
-        name: err?.name,
-        cause: err,
-      });
+      this.emit("error", normalizeError(err, "Microphone access denied"));
       return;
     }
 
@@ -171,14 +215,10 @@ export class MyChatBotCalls {
           });
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       this.setStatus("idle");
       this.conversation = null;
-      this.emit("error", {
-        message: err?.message || "Failed to start call",
-        name: err?.name,
-        cause: err,
-      });
+      this.emit("error", normalizeError(err, "Failed to start call"));
     }
   }
 
