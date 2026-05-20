@@ -8,10 +8,45 @@ export type CallsConfig = {
   apiUrl?: string;
 };
 
+/**
+ * Per-call overrides forwarded to the underlying ElevenLabs session.
+ * Used to switch the agent's first message language, inject a one-off
+ * system prompt, override the voice, etc. Mirrors the public override
+ * shape of @elevenlabs/client. Each field must also be allow-listed in
+ * the agent's "Security → Allowed overrides" settings on ElevenLabs.
+ */
+export type CallOverrides = {
+  agent?: {
+    prompt?: { prompt?: string };
+    /** Override the greeting verbatim. Usually leave undefined and let
+     * the agent's language_presets translation handle it. */
+    firstMessage?: string;
+    /** ISO 639 language code, e.g. "en", "ru", "uk". Selects the
+     * matching language_preset (and its first_message_translation)
+     * on the ElevenLabs agent. */
+    language?: Language;
+  };
+  tts?: { voiceId?: string };
+  conversation?: { textOnly?: boolean };
+};
+
+/**
+ * ISO 639 language codes supported by ElevenLabs Conversational AI.
+ * Re-exported from @elevenlabs/client so consumers don't need that
+ * dependency directly.
+ */
+export type Language =
+  | "en" | "ja" | "zh" | "de" | "hi" | "fr" | "ko" | "pt" | "pt-br"
+  | "it" | "es" | "id" | "nl" | "tr" | "pl" | "sv" | "bg" | "ro"
+  | "ar" | "cs" | "el" | "fi" | "ms" | "da" | "ta" | "uk" | "ru"
+  | "hu" | "hr" | "sk" | "no" | "vi" | "tl";
+
 export type StartOptions = {
   callerId?: string;
   dynamicVariables?: Record<string, string | number | boolean>;
   clientTools?: ClientTools;
+  /** Per-call overrides for the ElevenLabs agent (language, voice, etc.). */
+  overrides?: CallOverrides;
 };
 
 export type CallStatus =

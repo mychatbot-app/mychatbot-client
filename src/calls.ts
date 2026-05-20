@@ -189,6 +189,7 @@ export class MyChatBotCalls {
         ...(Object.keys(elClientTools).length > 0 && {
           clientTools: elClientTools,
         }),
+        ...(opts?.overrides && { overrides: opts.overrides }),
         onConnect: (props: { conversationId: string }) => {
           this.setStatus("connected");
           this.emit("connect", props);

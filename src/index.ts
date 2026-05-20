@@ -11,4 +11,6 @@ export type {
   ClientToolParameter,
   ClientToolDefinition,
   ClientTools,
+  CallOverrides,
+  Language,
 } from "./types";
