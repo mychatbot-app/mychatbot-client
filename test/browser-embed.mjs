@@ -50,6 +50,21 @@ check('config "off" removes the toggle entirely', /transcriptMode === "off"\) bt
 check("transcript text lands via textContent only", /body\.textContent = text/.test(ui) && /chip\.textContent/.test(ui));
 check("a new call clears the previous transcript", /panel\.textContent = ""/.test(ui));
 
+// The speaker chips say WHO is talking, at 10.5px semi-bold, on a sheet that
+// goes dark with the visitor's OS. They used the light-surface accent (--c)
+// and muted ink for both schemes, which left "You" and the agent's name barely
+// legible on dark (owner, 2026-08-13). They now take their own variables, and
+// the dark block must override BOTH — an override that sets only the tint
+// would look fixed in a mock and stay unreadable in the hand.
+const darkBlock = ui.slice(ui.indexOf("prefers-color-scheme: dark"), ui.indexOf("box-sizing:border-box"));
+check(
+  "the chips use their own colour variables, not the light-surface accent",
+  /color:var\(--chip-ink\)/.test(ui) && /color:var\(--chip-bot-ink\)/.test(ui) &&
+    !/\.mcb-chip \{[^}]*color:var\(--panel-mut\)/.test(ui),
+);
+check("dark mode re-inks the visitor chip", /--chip-ink:#[0-9A-Fa-f]{6}/.test(darkBlock), darkBlock.slice(0, 80));
+check("dark mode re-inks the agent chip", /--chip-bot-ink:#[0-9A-Fa-f]{6}/.test(darkBlock));
+
 // The one innerHTML assigns a compile-time constant; config lands via
 // textContent/attributes, so no config value can become markup.
 const innerHTMLUses = [...ui.matchAll(/\.innerHTML\s*=\s*([A-Za-z_]+)/g)].map((m) => m[1]);
