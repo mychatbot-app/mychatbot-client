@@ -98,6 +98,12 @@ const CSS = `
     --ok:#34D399; --warn:#FBBF24;
     --panel:rgba(255,255,255,.6); --panel-solid:rgba(255,255,255,.97);
     --panel-edge:rgba(255,255,255,.6); --panel-ink:#191925; --panel-mut:#5F5C72;
+    /* Speaker chips get their own colours because they are the one place the
+       accent sits ON the panel rather than beside it. --c is tuned for white
+       surfaces, so reusing it left "Nibir Assistant" as mid-purple text on a
+       dark sheet — legible in the mock, not on a phone at arm's length. */
+    --chip-bg:rgba(120,120,128,.16); --chip-ink:var(--panel-mut);
+    --chip-bot-bg:rgba(108,71,255,.18); --chip-bot-ink:var(--c);
     --err-ink:#B3261E; --err-glass:rgba(253,236,236,.78);
     position:fixed; right:20px; bottom:20px; z-index:2147483000;
     display:flex; flex-direction:column; align-items:flex-end; gap:10px;
@@ -109,6 +115,13 @@ const CSS = `
     #${ROOT_ID} {
       --panel:rgba(30,28,42,.6); --panel-solid:rgba(30,28,42,.97);
       --panel-edge:rgba(255,255,255,.12); --panel-ink:#EFEDF8; --panel-mut:#A5A2BC;
+      /* Both chips carry NAMES — who is speaking — so they are read, not
+         glanced at, and they sit at 10.5px semi-bold. On the dark sheet the
+         light-surface values fell to roughly 3:1 and 2.4:1; these land near
+         11:1 and 7:1, and the tints lift a little so the pill still reads as
+         a pill (owner, 2026-08-13: "hard to read on the dark background"). */
+      --chip-bg:rgba(255,255,255,.14); --chip-ink:#DCD9EC;
+      --chip-bot-bg:rgba(139,107,255,.28); --chip-bot-ink:#C9B8FF;
       --err-ink:#F2B8B5; --err-glass:rgba(58,32,34,.66);
     }
   }
@@ -226,8 +239,8 @@ const CSS = `
   #${ROOT_ID} .mcb-chip { display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis;
     white-space:nowrap; vertical-align:middle; font:650 10.5px/1.1 inherit;
     padding:4px 9px; border-radius:999px; margin-bottom:4px;
-    background:rgba(120,120,128,.16); color:var(--panel-mut); }
-  #${ROOT_ID} .mcb-line[data-who="bot"] .mcb-chip { background:rgba(108,71,255,.18); color:var(--c); }
+    background:var(--chip-bg); color:var(--chip-ink); }
+  #${ROOT_ID} .mcb-line[data-who="bot"] .mcb-chip { background:var(--chip-bot-bg); color:var(--chip-bot-ink); }
   #${ROOT_ID} .mcb-text { display:block; font:400 13px/1.5 inherit; color:var(--panel-ink); overflow-wrap:break-word; }
 
   #${ROOT_ID} .mcb-toast { max-width:min(300px, calc(100vw - 40px)); padding:10px 14px;
