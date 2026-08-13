@@ -40,9 +40,15 @@ check("pre-init listeners are queued", /pending\.push\(\[event, cb\]\)/.test(fac
 check("and attached on init", /for \(const \[event, cb\] of pending\)/.test(facade));
 
 // --- the compact UI ----------------------------------------------------------
-// It renders NO model output: there is no transcript, so no 'message'
-// listener and no element that ever receives conversation text.
-check("no transcript: the message event is never subscribed", !/["']message["']/.test(ui));
+// The transcript exists but stays behind a toggle: collapsed by default so
+// the pill is one line, openable because "where did it say the price?" is a
+// question visitors actually have, and removable via config.
+check("the transcript is collapsed by default", /transcriptMode === "open"/.test(ui) && /opts\.transcript \|\| "collapsed"/.test(ui));
+check("a toggle button controls it", /btnCC\.addEventListener/.test(ui) && /aria-expanded/.test(ui));
+check('config "off" removes the toggle entirely', /transcriptMode === "off"\) btnCC\.remove\(\)/.test(ui));
+// Transcript content is model+visitor text and must stay inert.
+check("transcript text lands via textContent only", /body\.textContent = text/.test(ui) && /chip\.textContent/.test(ui));
+check("a new call clears the previous transcript", /panel\.textContent = ""/.test(ui));
 
 // The one innerHTML assigns a compile-time constant; config lands via
 // textContent/attributes, so no config value can become markup.

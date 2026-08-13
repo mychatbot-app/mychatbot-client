@@ -4,8 +4,11 @@
 // page's 430px card — transcript, footnote, the lot — and the owner's verdict
 // was immediate: "it's bad and takes too much space". A customer site's voice
 // control is furniture, not a feature tour: idle it is a 56px bubble, live it
-// is one slim line — state, mute, end — and nothing else. No transcript at
-// all, which also means this component never renders model output.
+// is one slim line — state, mute, end — plus a transcript BEHIND A TOGGLE:
+// collapsed it costs nothing, open it is a small scrollable panel above the
+// pill, because "where did it say the price?" is a question visitors actually
+// have. Transcript text is model+visitor content and lands via textContent
+// ONLY — it must stay inert.
 //
 // Two things stay OUT by design, enforced by test:
 //   * telemetry — funnel beacons ride the onCallStart/onCallEnd callbacks; an
@@ -25,6 +28,11 @@ export type MountOptions = {
   position?: "bottom-right" | "bottom-left";
   /** Render inline inside this element/selector instead of floating. */
   target?: string | Element;
+  /**
+   * The live transcript. "collapsed" (default) shows a toggle button on the
+   * pill; "open" starts expanded; "off" removes the toggle entirely.
+   */
+  transcript?: "collapsed" | "open" | "off";
   /** Page functions the agent may call mid-conversation. */
   client_tools?: ClientTools;
   /** Fired once per call, when the conversation actually connects. */
@@ -49,9 +57,15 @@ const SKELETON = `
       <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/>
     </svg>
   </button>
+  <div class="mcb-panel" data-el="panel" hidden></div>
   <div class="mcb-pill" data-el="pill" hidden>
     <span class="mcb-dot" aria-hidden="true"></span>
     <span class="mcb-txt" data-el="state">Connecting</span>
+    <button class="mcb-ib mcb-cc" type="button" data-el="cc" title="Show transcript" aria-label="Show transcript" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+    </button>
     <button class="mcb-ib mcb-mute" type="button" data-el="mute" title="Mute" aria-label="Mute microphone">
       <svg class="ic-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/>
@@ -123,6 +137,20 @@ const CSS = `
   #${ROOT_ID}[data-muted="1"] .mcb-mute { border-color:var(--warn); color:var(--warn); }
   #${ROOT_ID}[data-muted="1"] .mcb-mute .ic-on { display:none; }
   #${ROOT_ID}[data-muted="1"] .mcb-mute .ic-off { display:flex; }
+  #${ROOT_ID} .mcb-panel { width:min(320px, calc(100vw - 40px)); max-height:180px; overflow-y:auto;
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:10px 12px; box-shadow:var(--shadow); scrollbar-width:thin; }
+  #${ROOT_ID} .mcb-panel:empty::before { content:"The conversation will appear here as you talk…";
+    font:400 12px/1.4 inherit; color:var(--mut); }
+  #${ROOT_ID} .mcb-line { display:block; }
+  #${ROOT_ID} .mcb-line + .mcb-line { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); }
+  #${ROOT_ID} .mcb-chip { display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis;
+    white-space:nowrap; vertical-align:middle; font:650 10.5px/1.1 inherit;
+    padding:3px 8px; border-radius:999px; margin-bottom:3px;
+    background:rgba(127,127,127,.14); color:var(--mut); }
+  #${ROOT_ID} .mcb-line[data-who="bot"] .mcb-chip { background:color-mix(in srgb, var(--c) 16%, transparent); color:var(--c); }
+  #${ROOT_ID} .mcb-text { display:block; font:400 12.5px/1.45 inherit; color:var(--ink); overflow-wrap:break-word; }
+  #${ROOT_ID} .mcb-cc[aria-expanded="true"] { background:color-mix(in srgb, var(--c) 14%, transparent); border-color:var(--c); color:var(--c); }
   #${ROOT_ID} .mcb-end { border-color:transparent; background:#E5484D; color:#fff; }
   #${ROOT_ID} .mcb-end:hover { background:#CC3B40; }
   #${ROOT_ID} .mcb-toast { max-width:min(300px, calc(100vw - 40px)); padding:8px 12px;
@@ -182,6 +210,41 @@ export function mount(opts: MountOptions): () => void {
   const elState = el("state");
   const btnMute = el("mute") as HTMLButtonElement;
   const btnEnd = el("end") as HTMLButtonElement;
+  const btnCC = el("cc") as HTMLButtonElement;
+  const panel = el("panel");
+
+  // The transcript: collapsed by default — the pill stays one line until the
+  // visitor asks for it — openable from config, or absent entirely.
+  const transcriptMode = opts.transcript || "collapsed";
+  let transcriptOpen = transcriptMode === "open";
+  if (transcriptMode === "off") btnCC.remove();
+  const syncPanel = (inCall: boolean) => {
+    panel.hidden = !(inCall && transcriptOpen);
+    if (transcriptMode !== "off") {
+      btnCC.setAttribute("aria-expanded", transcriptOpen ? "true" : "false");
+      btnCC.title = transcriptOpen ? "Hide transcript" : "Show transcript";
+      btnCC.setAttribute("aria-label", btnCC.title);
+    }
+  };
+  // One line per turn, newest last, capped — enough to re-read the exchange,
+  // small enough to stay a panel. All text lands via textContent: this is
+  // model+visitor content and must stay inert.
+  function addLine(who: "user" | "bot", text: string) {
+    const line = document.createElement("div");
+    line.className = "mcb-line";
+    line.setAttribute("data-who", who);
+    const chip = document.createElement("span");
+    chip.className = "mcb-chip";
+    chip.textContent = who === "user" ? "You" : name;
+    const body = document.createElement("span");
+    body.className = "mcb-text";
+    body.textContent = text;
+    line.appendChild(chip);
+    line.appendChild(body);
+    panel.appendChild(line);
+    while (panel.children.length > 12) panel.removeChild(panel.firstChild!);
+    panel.scrollTop = panel.scrollHeight;
+  }
 
   fab.title = `Talk to ${name}`;
   fab.setAttribute("aria-label", `Talk to ${name}`);
@@ -210,6 +273,7 @@ export function mount(opts: MountOptions): () => void {
     const inCall = p !== "idle";
     pill.hidden = !inCall;
     fab.hidden = inCall;
+    syncPanel(inCall);
   };
   const say = (s: string) => {
     elState.textContent = s;
@@ -251,6 +315,11 @@ export function mount(opts: MountOptions): () => void {
     say(root.getAttribute("data-muted") === "1" ? (speaking ? "Speaking" : "Muted") : speaking ? "Speaking" : "Listening");
   });
 
+  listen("message", (e: any) => {
+    if (!e || !e.message) return;
+    addLine(e.role === "user" ? "user" : "bot", e.message);
+  });
+
   // The engine reports a denied microphone HERE, not by throwing from start().
   listen("error", (e: any) => {
     const m = (e && e.message) || "";
@@ -275,10 +344,18 @@ export function mount(opts: MountOptions): () => void {
   const onPageHide = () => reportCallEnd("remote");
   window.addEventListener("pagehide", onPageHide);
 
+  if (transcriptMode !== "off") {
+    btnCC.addEventListener("click", () => {
+      transcriptOpen = !transcriptOpen;
+      syncPanel(root.getAttribute("data-phase") !== "idle");
+    });
+  }
+
   fab.addEventListener("click", () => {
     ended = false;
     toast.hidden = true;
     toast.textContent = "";
+    panel.textContent = "";
     root.setAttribute("data-muted", "0");
     phase("connecting");
     say("Connecting");
