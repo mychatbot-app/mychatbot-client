@@ -81,15 +81,29 @@ const SKELETON = `
     </button>
   </div>`;
 
+// Liquid-glass styling: translucent blurred surfaces with hairline light
+// edges and inner highlights (the iOS material grammar), with the MyChatBot
+// purple as the one saturated element. The first pass used flat white cards
+// and 1px gray borders and read as generic; the owner's brief was explicit:
+// half-transparent, 3D, and never a solid border on active states — active
+// states are tinted fills and glows instead.
+//
 // Media-query variables, NOT light-dark(): Safari <17.5 and several in-app
 // webviews drop every declaration using it — learned on the signup pages.
+// backdrop-filter carries an @supports fallback to near-opaque surfaces for
+// the same class of webviews.
 const CSS = `
   #${ROOT_ID} {
-    --c:#6C47FF; --card:#FFFFFF; --ink:#191925; --mut:#6B6880; --line:#ECEAF6;
-    --ok:#1F9D62; --warn:#B26A00; --err-bg:#FDF0F0; --err-ink:#B3261E; --err-line:#F3C9C9;
-    --shadow:0 10px 30px rgba(23,18,60,.22), 0 3px 10px rgba(23,18,60,.10);
+    --c:#6C47FF; --c-soft:#8B6BFF; --c-deep:#5230E0;
+    --ink:#191925; --mut:#5F5C72;
+    --glass:rgba(255,255,255,.55); --glass-solid:rgba(255,255,255,.97);
+    --edge:rgba(255,255,255,.55); --hilite:rgba(255,255,255,.55);
+    --fill:rgba(120,120,128,.14); --fill-hover:rgba(120,120,128,.24);
+    --ok:#1F9D62; --warn:#B26A00;
+    --err-ink:#B3261E; --err-glass:rgba(253,236,236,.72);
+    --shadow:0 18px 44px rgba(23,18,60,.20), 0 2px 10px rgba(23,18,60,.10);
     position:fixed; right:20px; bottom:20px; z-index:2147483000;
-    display:flex; flex-direction:column; align-items:flex-end; gap:8px;
+    display:flex; flex-direction:column; align-items:flex-end; gap:10px;
     font:400 13px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
     color:var(--ink);
   }
@@ -97,9 +111,13 @@ const CSS = `
   #${ROOT_ID}.mcb-inline { position:static; align-items:flex-start; }
   @media (prefers-color-scheme: dark) {
     #${ROOT_ID} {
-      --card:#1F1D29; --ink:#EFEDF8; --mut:#A5A2BC; --line:#37344A;
-      --ok:#3ECF8E; --warn:#F0A64B; --err-bg:#3A2022; --err-ink:#F2B8B5; --err-line:#5A3236;
-      --shadow:0 10px 30px rgba(0,0,0,.5), 0 3px 10px rgba(0,0,0,.35);
+      --ink:#EFEDF8; --mut:#A5A2BC;
+      --glass:rgba(32,30,44,.55); --glass-solid:rgba(32,30,44,.97);
+      --edge:rgba(255,255,255,.12); --hilite:rgba(255,255,255,.10);
+      --fill:rgba(255,255,255,.10); --fill-hover:rgba(255,255,255,.18);
+      --ok:#3ECF8E; --warn:#F0A64B;
+      --err-ink:#F2B8B5; --err-glass:rgba(58,32,34,.62);
+      --shadow:0 18px 44px rgba(0,0,0,.55), 0 2px 10px rgba(0,0,0,.35);
     }
   }
   #${ROOT_ID} * { box-sizing:border-box; }
@@ -107,55 +125,89 @@ const CSS = `
      without this line the pill is visible from mount — caught by the first
      screenshot ever taken of the component, not by reading the code. */
   #${ROOT_ID} [hidden] { display:none !important; }
+
+  /* The one saturated element: a 3D brand orb. Radial off-center light plus
+     an inner top highlight and inner bottom shade make the sphere; the
+     colored glow sits it above the page. */
   #${ROOT_ID} .mcb-fab { width:56px; height:56px; border-radius:50%; border:0; cursor:pointer;
     display:flex; align-items:center; justify-content:center; color:#fff;
-    background:var(--c); box-shadow:var(--shadow);
-    transition:transform .15s, filter .15s; }
-  #${ROOT_ID} .mcb-fab:hover { transform:scale(1.06); filter:brightness(1.06); }
-  #${ROOT_ID} .mcb-fab:focus-visible { outline:3px solid #C9B8FF; outline-offset:2px; }
-  #${ROOT_ID} .mcb-fab svg { width:24px; height:24px; }
+    background:radial-gradient(130% 130% at 30% 18%, var(--c-soft) 0%, var(--c) 52%, var(--c-deep) 100%);
+    box-shadow:0 14px 30px rgba(93,58,255,.42), 0 3px 8px rgba(93,58,255,.28),
+      inset 0 1.5px 1px rgba(255,255,255,.45), inset 0 -3px 8px rgba(30,10,110,.35);
+    transition:transform .18s cubic-bezier(.2,.9,.3,1.4), box-shadow .18s, filter .18s; }
+  #${ROOT_ID} .mcb-fab:hover { transform:translateY(-2px) scale(1.045); filter:saturate(1.08);
+    box-shadow:0 18px 40px rgba(93,58,255,.5), 0 4px 10px rgba(93,58,255,.3),
+      inset 0 1.5px 1px rgba(255,255,255,.5), inset 0 -3px 8px rgba(30,10,110,.35); }
+  #${ROOT_ID} .mcb-fab:active { transform:scale(.97); }
+  #${ROOT_ID} .mcb-fab:focus-visible { outline:3px solid rgba(139,107,255,.55); outline-offset:3px; }
+  #${ROOT_ID} .mcb-fab svg { width:24px; height:24px; filter:drop-shadow(0 1px 1px rgba(30,10,110,.35)); }
   #${ROOT_ID}[data-phase="connecting"] .mcb-fab { animation:mcb-breathe 1.1s ease-in-out infinite; }
-  @keyframes mcb-breathe { 0%,100% { transform:scale(1) } 50% { transform:scale(1.08) } }
+  @keyframes mcb-breathe { 0%,100% { transform:scale(1) } 50% { transform:scale(1.07) } }
 
-  #${ROOT_ID} .mcb-pill { display:flex; align-items:center; gap:8px; height:40px;
-    padding:0 6px 0 12px; border-radius:999px; background:var(--card);
-    border:1px solid var(--line); box-shadow:var(--shadow); max-width:min(300px, calc(100vw - 40px)); }
-  #${ROOT_ID} .mcb-dot { width:8px; height:8px; border-radius:50%; background:var(--ok); flex:0 0 auto; }
-  #${ROOT_ID}[data-mode="speaking"] .mcb-dot { background:var(--c); animation:mcb-blink .9s ease-in-out infinite; }
-  #${ROOT_ID}[data-phase="connecting"] .mcb-dot { background:var(--mut); animation:mcb-blink 1s ease-in-out infinite; }
-  #${ROOT_ID}[data-muted="1"] .mcb-dot { background:var(--warn); animation:none; }
+  /* Glass material: blur + saturate behind a translucent surface, a light
+     hairline edge, and an inner top highlight. Shared by pill, panel, toast. */
+  #${ROOT_ID} .mcb-pill, #${ROOT_ID} .mcb-panel, #${ROOT_ID} .mcb-toast {
+    background:var(--glass-solid); border:1px solid var(--edge);
+    box-shadow:var(--shadow), inset 0 1px 0 var(--hilite); }
+  @supports (backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px)) {
+    #${ROOT_ID} .mcb-pill, #${ROOT_ID} .mcb-panel, #${ROOT_ID} .mcb-toast {
+      background:var(--glass);
+      -webkit-backdrop-filter:blur(28px) saturate(1.8); backdrop-filter:blur(28px) saturate(1.8); }
+  }
+
+  #${ROOT_ID} .mcb-pill { display:flex; align-items:center; gap:9px; height:44px;
+    padding:0 7px 0 14px; border-radius:999px; max-width:min(300px, calc(100vw - 40px)); }
+  #${ROOT_ID} .mcb-dot { width:8px; height:8px; border-radius:50%; background:var(--ok); flex:0 0 auto;
+    box-shadow:0 0 10px currentColor; color:var(--ok); }
+  #${ROOT_ID}[data-mode="speaking"] .mcb-dot { background:var(--c); color:var(--c); animation:mcb-blink .9s ease-in-out infinite; }
+  #${ROOT_ID}[data-phase="connecting"] .mcb-dot { background:var(--mut); color:var(--mut); animation:mcb-blink 1s ease-in-out infinite; }
+  #${ROOT_ID}[data-muted="1"] .mcb-dot { background:var(--warn); color:var(--warn); animation:none; }
   @keyframes mcb-blink { 0%,100% { opacity:.35 } 50% { opacity:1 } }
-  #${ROOT_ID} .mcb-txt { font:600 12px/1 inherit; letter-spacing:.02em; color:var(--ink);
+  #${ROOT_ID} .mcb-txt { font:600 12.5px/1 inherit; letter-spacing:.02em; color:var(--ink);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  #${ROOT_ID} .mcb-ib { width:30px; height:30px; border-radius:50%; border:1px solid var(--line);
-    background:transparent; color:var(--ink); cursor:pointer; padding:0;
-    display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
-  #${ROOT_ID} .mcb-ib:hover { background:rgba(127,127,127,.12); }
-  #${ROOT_ID} .mcb-ib:focus-visible { outline:2px solid #C9B8FF; outline-offset:1px; }
+
+  /* Controls: borderless translucent fills, iOS-style. Active states are
+     tinted fills and glows — NEVER a border. */
+  #${ROOT_ID} .mcb-ib { width:32px; height:32px; border-radius:50%; border:0;
+    background:var(--fill); color:var(--ink); cursor:pointer; padding:0;
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+    transition:background .15s, transform .12s, box-shadow .15s; }
+  #${ROOT_ID} .mcb-ib:hover { background:var(--fill-hover); transform:translateY(-1px); }
+  #${ROOT_ID} .mcb-ib:active { transform:none; }
+  #${ROOT_ID} .mcb-ib:focus-visible { outline:2px solid rgba(139,107,255,.55); outline-offset:2px; }
   #${ROOT_ID} .mcb-ib svg { width:15px; height:15px; }
+  #${ROOT_ID} .mcb-cc[aria-expanded="true"] { background:rgba(108,71,255,.16); color:var(--c);
+    box-shadow:0 0 0 4px rgba(108,71,255,.10); }
   #${ROOT_ID} .mcb-mute .ic-off { display:none; }
-  #${ROOT_ID}[data-muted="1"] .mcb-mute { border-color:var(--warn); color:var(--warn); }
+  #${ROOT_ID}[data-muted="1"] .mcb-mute { background:rgba(240,166,75,.18); color:var(--warn);
+    box-shadow:0 0 0 4px rgba(240,166,75,.10); }
   #${ROOT_ID}[data-muted="1"] .mcb-mute .ic-on { display:none; }
   #${ROOT_ID}[data-muted="1"] .mcb-mute .ic-off { display:flex; }
-  #${ROOT_ID} .mcb-panel { width:min(320px, calc(100vw - 40px)); max-height:180px; overflow-y:auto;
-    background:var(--card); border:1px solid var(--line); border-radius:14px;
-    padding:10px 12px; box-shadow:var(--shadow); scrollbar-width:thin; }
+  #${ROOT_ID} .mcb-end { color:#fff;
+    background:radial-gradient(130% 130% at 30% 18%, #FF7A7E 0%, #E5484D 58%, #C2373C 100%);
+    box-shadow:0 6px 14px rgba(229,72,77,.38), inset 0 1px 1px rgba(255,255,255,.4), inset 0 -2px 5px rgba(120,20,25,.35); }
+  #${ROOT_ID} .mcb-end:hover { background:radial-gradient(130% 130% at 30% 18%, #FF8A8D 0%, #E5484D 52%, #B32F34 100%); }
+
+  #${ROOT_ID} .mcb-panel { width:min(320px, calc(100vw - 40px)); max-height:190px; overflow-y:auto;
+    border-radius:20px; padding:11px 13px; scrollbar-width:thin; }
   #${ROOT_ID} .mcb-panel:empty::before { content:"The conversation will appear here as you talk…";
     font:400 12px/1.4 inherit; color:var(--mut); }
   #${ROOT_ID} .mcb-line { display:block; }
-  #${ROOT_ID} .mcb-line + .mcb-line { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); }
+  #${ROOT_ID} .mcb-line + .mcb-line { margin-top:9px; padding-top:9px;
+    border-top:1px solid rgba(127,127,127,.14); }
   #${ROOT_ID} .mcb-chip { display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis;
     white-space:nowrap; vertical-align:middle; font:650 10.5px/1.1 inherit;
-    padding:3px 8px; border-radius:999px; margin-bottom:3px;
-    background:rgba(127,127,127,.14); color:var(--mut); }
-  #${ROOT_ID} .mcb-line[data-who="bot"] .mcb-chip { background:color-mix(in srgb, var(--c) 16%, transparent); color:var(--c); }
+    padding:3.5px 9px; border-radius:999px; margin-bottom:4px;
+    background:var(--fill); color:var(--mut); }
+  #${ROOT_ID} .mcb-line[data-who="bot"] .mcb-chip { background:rgba(108,71,255,.16); color:var(--c); }
   #${ROOT_ID} .mcb-text { display:block; font:400 12.5px/1.45 inherit; color:var(--ink); overflow-wrap:break-word; }
-  #${ROOT_ID} .mcb-cc[aria-expanded="true"] { background:color-mix(in srgb, var(--c) 14%, transparent); border-color:var(--c); color:var(--c); }
-  #${ROOT_ID} .mcb-end { border-color:transparent; background:#E5484D; color:#fff; }
-  #${ROOT_ID} .mcb-end:hover { background:#CC3B40; }
-  #${ROOT_ID} .mcb-toast { max-width:min(300px, calc(100vw - 40px)); padding:8px 12px;
-    border-radius:10px; background:var(--err-bg); border:1px solid var(--err-line);
-    color:var(--err-ink); font:500 12px/1.4 inherit; box-shadow:var(--shadow); }
+
+  #${ROOT_ID} .mcb-toast { max-width:min(300px, calc(100vw - 40px)); padding:9px 13px;
+    border-radius:14px; color:var(--err-ink); font:500 12px/1.4 inherit; }
+  #${ROOT_ID} .mcb-toast { background:var(--err-glass); }
+  @supports (backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px)) {
+    #${ROOT_ID} .mcb-toast { -webkit-backdrop-filter:blur(20px) saturate(1.6); backdrop-filter:blur(20px) saturate(1.6); }
+  }
   @media (prefers-reduced-motion: reduce) {
     #${ROOT_ID} *, #${ROOT_ID} { animation:none!important; transition:none!important }
   }`;
