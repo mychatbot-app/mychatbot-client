@@ -89,6 +89,10 @@ const CSS = `
     }
   }
   #${ROOT_ID} * { box-sizing:border-box; }
+  /* The author display rules below beat the UA's [hidden]{display:none}, so
+     without this line the pill is visible from mount — caught by the first
+     screenshot ever taken of the component, not by reading the code. */
+  #${ROOT_ID} [hidden] { display:none !important; }
   #${ROOT_ID} .mcb-fab { width:56px; height:56px; border-radius:50%; border:0; cursor:pointer;
     display:flex; align-items:center; justify-content:center; color:#fff;
     background:var(--c); box-shadow:var(--shadow);

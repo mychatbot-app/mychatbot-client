@@ -54,6 +54,12 @@ check(
 );
 check("the agent name lands as attributes, never markup", /setAttribute\("aria-label", `Talk to \$\{name\}`\)/.test(ui));
 
+// The author display rules beat the UA's [hidden]{display:none}, so without
+// an explicit override the pill is visible from mount, reading "Connecting"
+// under the idle bubble. Found by the first SCREENSHOT of the component —
+// invisible to every source-level assertion here.
+check("the stylesheet forces [hidden] to actually hide", /\[hidden\] \{ display:none !important/.test(ui));
+
 // No telemetry in the SDK. Funnel beacons ride the onCallStart/onCallEnd
 // callbacks; an SDK that phones home from customer pages would be spyware.
 const uiCode = ui.split("\n").filter((l) => !/^\s*(\/\/|\*)/.test(l)).join("\n");
