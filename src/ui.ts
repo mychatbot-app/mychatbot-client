@@ -59,7 +59,7 @@ const SKELETON = `
   </button>
   <div class="mcb-panel" data-el="panel" hidden></div>
   <div class="mcb-pill" data-el="pill" hidden>
-    <span class="mcb-dot" aria-hidden="true"></span>
+    <span class="mcb-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
     <span class="mcb-txt" data-el="state">Connecting</span>
     <button class="mcb-ib mcb-cc" type="button" data-el="cc" title="Show transcript" aria-label="Show transcript" aria-expanded="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -81,43 +81,35 @@ const SKELETON = `
     </button>
   </div>`;
 
-// Liquid-glass styling: translucent blurred surfaces with hairline light
-// edges and inner highlights (the iOS material grammar), with the MyChatBot
-// purple as the one saturated element. The first pass used flat white cards
-// and 1px gray borders and read as generic; the owner's brief was explicit:
-// half-transparent, 3D, and never a solid border on active states — active
-// states are tinted fills and glows instead.
+// Liquid-glass, iteration 2. The first glass pass kept a WHITE pill with
+// gray circle buttons and a static dot, and the owner's verdict was "still
+// looks bad" — it read as debug UI. This pass borrows the Dynamic Island
+// grammar: the in-call control is a DARK glass capsule in both themes (dark
+// is what makes it self-contained and premium over any page), the state dot
+// is a live five-bar waveform (a static dot says nothing; bars say VOICE),
+// and the orb gets a real specular highlight plus a slow invitation pulse.
 //
 // Media-query variables, NOT light-dark(): Safari <17.5 and several in-app
-// webviews drop every declaration using it — learned on the signup pages.
-// backdrop-filter carries an @supports fallback to near-opaque surfaces for
-// the same class of webviews.
+// webviews drop every declaration using it. backdrop-filter carries an
+// @supports fallback to near-opaque surfaces.
 const CSS = `
   #${ROOT_ID} {
-    --c:#6C47FF; --c-soft:#8B6BFF; --c-deep:#5230E0;
-    --ink:#191925; --mut:#5F5C72;
-    --glass:rgba(255,255,255,.55); --glass-solid:rgba(255,255,255,.97);
-    --edge:rgba(255,255,255,.55); --hilite:rgba(255,255,255,.55);
-    --fill:rgba(120,120,128,.14); --fill-hover:rgba(120,120,128,.24);
-    --ok:#1F9D62; --warn:#B26A00;
-    --err-ink:#B3261E; --err-glass:rgba(253,236,236,.72);
-    --shadow:0 18px 44px rgba(23,18,60,.20), 0 2px 10px rgba(23,18,60,.10);
+    --c:#6C47FF; --c-soft:#8B6BFF; --c-deep:#4F2BD8; --c-glow:#A78BFF;
+    --ok:#34D399; --warn:#FBBF24;
+    --panel:rgba(255,255,255,.6); --panel-solid:rgba(255,255,255,.97);
+    --panel-edge:rgba(255,255,255,.6); --panel-ink:#191925; --panel-mut:#5F5C72;
+    --err-ink:#B3261E; --err-glass:rgba(253,236,236,.78);
     position:fixed; right:20px; bottom:20px; z-index:2147483000;
     display:flex; flex-direction:column; align-items:flex-end; gap:10px;
     font:400 13px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-    color:var(--ink);
   }
   #${ROOT_ID}.mcb-left { right:auto; left:20px; align-items:flex-start; }
   #${ROOT_ID}.mcb-inline { position:static; align-items:flex-start; }
   @media (prefers-color-scheme: dark) {
     #${ROOT_ID} {
-      --ink:#EFEDF8; --mut:#A5A2BC;
-      --glass:rgba(32,30,44,.55); --glass-solid:rgba(32,30,44,.97);
-      --edge:rgba(255,255,255,.12); --hilite:rgba(255,255,255,.10);
-      --fill:rgba(255,255,255,.10); --fill-hover:rgba(255,255,255,.18);
-      --ok:#3ECF8E; --warn:#F0A64B;
-      --err-ink:#F2B8B5; --err-glass:rgba(58,32,34,.62);
-      --shadow:0 18px 44px rgba(0,0,0,.55), 0 2px 10px rgba(0,0,0,.35);
+      --panel:rgba(30,28,42,.6); --panel-solid:rgba(30,28,42,.97);
+      --panel-edge:rgba(255,255,255,.12); --panel-ink:#EFEDF8; --panel-mut:#A5A2BC;
+      --err-ink:#F2B8B5; --err-glass:rgba(58,32,34,.66);
     }
   }
   #${ROOT_ID} * { box-sizing:border-box; }
@@ -126,90 +118,127 @@ const CSS = `
      screenshot ever taken of the component, not by reading the code. */
   #${ROOT_ID} [hidden] { display:none !important; }
 
-  /* The one saturated element: a 3D brand orb. Radial off-center light plus
-     an inner top highlight and inner bottom shade make the sphere; the
-     colored glow sits it above the page. */
-  #${ROOT_ID} .mcb-fab { width:56px; height:56px; border-radius:50%; border:0; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; color:#fff;
-    background:radial-gradient(130% 130% at 30% 18%, var(--c-soft) 0%, var(--c) 52%, var(--c-deep) 100%);
-    box-shadow:0 14px 30px rgba(93,58,255,.42), 0 3px 8px rgba(93,58,255,.28),
-      inset 0 1.5px 1px rgba(255,255,255,.45), inset 0 -3px 8px rgba(30,10,110,.35);
+  /* ---- The orb ----------------------------------------------------------- */
+  #${ROOT_ID} .mcb-fab { position:relative; width:58px; height:58px; border-radius:50%; border:0;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff;
+    background:radial-gradient(135% 135% at 32% 16%, var(--c-soft) 0%, var(--c) 50%, var(--c-deep) 100%);
+    box-shadow:0 16px 34px rgba(93,58,255,.45), 0 4px 10px rgba(93,58,255,.3),
+      inset 0 1.5px 1px rgba(255,255,255,.5), inset 0 -4px 10px rgba(28,8,105,.4);
     transition:transform .18s cubic-bezier(.2,.9,.3,1.4), box-shadow .18s, filter .18s; }
-  #${ROOT_ID} .mcb-fab:hover { transform:translateY(-2px) scale(1.045); filter:saturate(1.08);
-    box-shadow:0 18px 40px rgba(93,58,255,.5), 0 4px 10px rgba(93,58,255,.3),
-      inset 0 1.5px 1px rgba(255,255,255,.5), inset 0 -3px 8px rgba(30,10,110,.35); }
-  #${ROOT_ID} .mcb-fab:active { transform:scale(.97); }
+  /* Specular: a soft white blob at the light source, the thing that makes a
+     sphere read as glossy rather than tinted. */
+  #${ROOT_ID} .mcb-fab::before { content:""; position:absolute; left:10px; top:6px;
+    width:24px; height:16px; border-radius:50%;
+    background:radial-gradient(closest-side, rgba(255,255,255,.75), rgba(255,255,255,0));
+    filter:blur(1px); pointer-events:none; }
+  /* A slow ring every few seconds: the invitation. Removed for reduced-motion. */
+  #${ROOT_ID} .mcb-fab::after { content:""; position:absolute; inset:0; border-radius:50%;
+    box-shadow:0 0 0 0 rgba(139,107,255,.55); animation:mcb-invite 3.6s ease-out infinite;
+    pointer-events:none; }
+  @keyframes mcb-invite {
+    0% { box-shadow:0 0 0 0 rgba(139,107,255,.5); opacity:1 }
+    45% { box-shadow:0 0 0 14px rgba(139,107,255,0); opacity:0 }
+    100% { box-shadow:0 0 0 0 rgba(139,107,255,0); opacity:0 }
+  }
+  #${ROOT_ID} .mcb-fab:hover { transform:translateY(-2px) scale(1.05); filter:saturate(1.1); }
+  #${ROOT_ID} .mcb-fab:active { transform:scale(.96); }
   #${ROOT_ID} .mcb-fab:focus-visible { outline:3px solid rgba(139,107,255,.55); outline-offset:3px; }
-  #${ROOT_ID} .mcb-fab svg { width:24px; height:24px; filter:drop-shadow(0 1px 1px rgba(30,10,110,.35)); }
+  #${ROOT_ID} .mcb-fab svg { width:26px; height:26px; position:relative;
+    filter:drop-shadow(0 1px 2px rgba(28,8,105,.45)); }
   #${ROOT_ID}[data-phase="connecting"] .mcb-fab { animation:mcb-breathe 1.1s ease-in-out infinite; }
   @keyframes mcb-breathe { 0%,100% { transform:scale(1) } 50% { transform:scale(1.07) } }
 
-  /* Glass material: blur + saturate behind a translucent surface, a light
-     hairline edge, and an inner top highlight. Shared by pill, panel, toast. */
-  #${ROOT_ID} .mcb-pill, #${ROOT_ID} .mcb-panel, #${ROOT_ID} .mcb-toast {
-    background:var(--glass-solid); border:1px solid var(--edge);
-    box-shadow:var(--shadow), inset 0 1px 0 var(--hilite); }
+  /* ---- The island: dark glass capsule, both themes ------------------------ */
+  #${ROOT_ID} .mcb-pill { display:flex; align-items:center; gap:10px; height:48px;
+    padding:0 8px 0 16px; border-radius:999px; max-width:min(320px, calc(100vw - 40px));
+    color:#F4F2FC; background:rgba(16,14,26,.96);
+    border:1px solid rgba(255,255,255,.10);
+    box-shadow:0 20px 44px rgba(10,6,40,.5), 0 3px 10px rgba(10,6,40,.35),
+      inset 0 1px 0 rgba(255,255,255,.12);
+    transform-origin:100% 100%; animation:mcb-pop .34s cubic-bezier(.2,.9,.3,1.25) both; }
+  @keyframes mcb-pop { from { opacity:0; transform:scale(.6) translateY(10px) } to { opacity:1; transform:none } }
   @supports (backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px)) {
-    #${ROOT_ID} .mcb-pill, #${ROOT_ID} .mcb-panel, #${ROOT_ID} .mcb-toast {
-      background:var(--glass);
-      -webkit-backdrop-filter:blur(28px) saturate(1.8); backdrop-filter:blur(28px) saturate(1.8); }
+    #${ROOT_ID} .mcb-pill { background:rgba(16,14,26,.72);
+      -webkit-backdrop-filter:blur(26px) saturate(1.7); backdrop-filter:blur(26px) saturate(1.7); }
   }
-
-  #${ROOT_ID} .mcb-pill { display:flex; align-items:center; gap:9px; height:44px;
-    padding:0 7px 0 14px; border-radius:999px; max-width:min(300px, calc(100vw - 40px)); }
-  #${ROOT_ID} .mcb-dot { width:8px; height:8px; border-radius:50%; background:var(--ok); flex:0 0 auto;
-    box-shadow:0 0 10px currentColor; color:var(--ok); }
-  #${ROOT_ID}[data-mode="speaking"] .mcb-dot { background:var(--c); color:var(--c); animation:mcb-blink .9s ease-in-out infinite; }
-  #${ROOT_ID}[data-phase="connecting"] .mcb-dot { background:var(--mut); color:var(--mut); animation:mcb-blink 1s ease-in-out infinite; }
-  #${ROOT_ID}[data-muted="1"] .mcb-dot { background:var(--warn); color:var(--warn); animation:none; }
-  @keyframes mcb-blink { 0%,100% { opacity:.35 } 50% { opacity:1 } }
-  #${ROOT_ID} .mcb-txt { font:600 12.5px/1 inherit; letter-spacing:.02em; color:var(--ink);
+  #${ROOT_ID} .mcb-txt { font:600 13px/1 inherit; letter-spacing:.015em; color:#F4F2FC;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-  /* Controls: borderless translucent fills, iOS-style. Active states are
-     tinted fills and glows — NEVER a border. */
-  #${ROOT_ID} .mcb-ib { width:32px; height:32px; border-radius:50%; border:0;
-    background:var(--fill); color:var(--ink); cursor:pointer; padding:0;
+  /* ---- The waveform: five bars that say VOICE ----------------------------- */
+  #${ROOT_ID} .mcb-wave { display:flex; align-items:center; gap:2.5px; height:18px; flex:0 0 auto; }
+  #${ROOT_ID} .mcb-wave i { display:block; width:3px; height:6px; border-radius:2px;
+    background:var(--ok); box-shadow:0 0 8px rgba(52,211,153,.55);
+    animation:mcb-breath 2.2s ease-in-out infinite; }
+  #${ROOT_ID} .mcb-wave i:nth-child(2) { animation-delay:.18s }
+  #${ROOT_ID} .mcb-wave i:nth-child(3) { animation-delay:.36s }
+  #${ROOT_ID} .mcb-wave i:nth-child(4) { animation-delay:.54s }
+  #${ROOT_ID} .mcb-wave i:nth-child(5) { animation-delay:.72s }
+  @keyframes mcb-breath { 0%,100% { height:5px; opacity:.6 } 50% { height:10px; opacity:1 } }
+  #${ROOT_ID}[data-mode="speaking"] .mcb-wave i { background:var(--c-glow);
+    box-shadow:0 0 10px rgba(139,107,255,.75); animation:mcb-dance .8s ease-in-out infinite; }
+  #${ROOT_ID}[data-mode="speaking"] .mcb-wave i:nth-child(2) { animation-delay:.1s }
+  #${ROOT_ID}[data-mode="speaking"] .mcb-wave i:nth-child(3) { animation-delay:.2s }
+  #${ROOT_ID}[data-mode="speaking"] .mcb-wave i:nth-child(4) { animation-delay:.3s }
+  #${ROOT_ID}[data-mode="speaking"] .mcb-wave i:nth-child(5) { animation-delay:.4s }
+  @keyframes mcb-dance { 0%,100% { height:5px } 30% { height:16px } 60% { height:8px } }
+  #${ROOT_ID}[data-phase="connecting"] .mcb-wave i { background:rgba(244,242,252,.5);
+    box-shadow:none; animation:mcb-breath 1.1s ease-in-out infinite; }
+  #${ROOT_ID}[data-muted="1"] .mcb-wave i { background:var(--warn);
+    box-shadow:0 0 8px rgba(251,191,36,.5); animation:none; height:5px; }
+
+  /* ---- Controls on the island: translucent white fills, no borders -------- */
+  #${ROOT_ID} .mcb-ib { width:34px; height:34px; border-radius:50%; border:0;
+    background:rgba(255,255,255,.12); color:#F4F2FC; cursor:pointer; padding:0;
     display:flex; align-items:center; justify-content:center; flex:0 0 auto;
     transition:background .15s, transform .12s, box-shadow .15s; }
-  #${ROOT_ID} .mcb-ib:hover { background:var(--fill-hover); transform:translateY(-1px); }
+  #${ROOT_ID} .mcb-ib:hover { background:rgba(255,255,255,.22); transform:translateY(-1px); }
   #${ROOT_ID} .mcb-ib:active { transform:none; }
-  #${ROOT_ID} .mcb-ib:focus-visible { outline:2px solid rgba(139,107,255,.55); outline-offset:2px; }
-  #${ROOT_ID} .mcb-ib svg { width:15px; height:15px; }
-  #${ROOT_ID} .mcb-cc[aria-expanded="true"] { background:rgba(108,71,255,.16); color:var(--c);
-    box-shadow:0 0 0 4px rgba(108,71,255,.10); }
+  #${ROOT_ID} .mcb-ib:focus-visible { outline:2px solid rgba(139,107,255,.7); outline-offset:2px; }
+  #${ROOT_ID} .mcb-ib svg { width:16px; height:16px; }
+  #${ROOT_ID} .mcb-cc[aria-expanded="true"] { background:rgba(139,107,255,.32); color:#fff;
+    box-shadow:0 0 12px rgba(139,107,255,.45), inset 0 1px 0 rgba(255,255,255,.25); }
   #${ROOT_ID} .mcb-mute .ic-off { display:none; }
-  #${ROOT_ID}[data-muted="1"] .mcb-mute { background:rgba(240,166,75,.18); color:var(--warn);
-    box-shadow:0 0 0 4px rgba(240,166,75,.10); }
+  #${ROOT_ID}[data-muted="1"] .mcb-mute { background:rgba(251,191,36,.28); color:#FFE9B8;
+    box-shadow:0 0 12px rgba(251,191,36,.35); }
   #${ROOT_ID}[data-muted="1"] .mcb-mute .ic-on { display:none; }
   #${ROOT_ID}[data-muted="1"] .mcb-mute .ic-off { display:flex; }
   #${ROOT_ID} .mcb-end { color:#fff;
-    background:radial-gradient(130% 130% at 30% 18%, #FF7A7E 0%, #E5484D 58%, #C2373C 100%);
-    box-shadow:0 6px 14px rgba(229,72,77,.38), inset 0 1px 1px rgba(255,255,255,.4), inset 0 -2px 5px rgba(120,20,25,.35); }
-  #${ROOT_ID} .mcb-end:hover { background:radial-gradient(130% 130% at 30% 18%, #FF8A8D 0%, #E5484D 52%, #B32F34 100%); }
+    background:radial-gradient(135% 135% at 32% 16%, #FF8589 0%, #E5484D 55%, #B92C31 100%);
+    box-shadow:0 6px 16px rgba(229,72,77,.45), inset 0 1px 1px rgba(255,255,255,.45), inset 0 -2px 6px rgba(110,15,20,.4); }
+  #${ROOT_ID} .mcb-end:hover { filter:brightness(1.08); }
 
-  #${ROOT_ID} .mcb-panel { width:min(320px, calc(100vw - 40px)); max-height:190px; overflow-y:auto;
-    border-radius:20px; padding:11px 13px; scrollbar-width:thin; }
+  /* ---- The transcript: light glass sheet above the island ----------------- */
+  #${ROOT_ID} .mcb-panel { width:min(320px, calc(100vw - 40px)); max-height:200px; overflow-y:auto;
+    border-radius:22px; padding:12px 14px; scrollbar-width:thin;
+    color:var(--panel-ink); background:var(--panel-solid); border:1px solid var(--panel-edge);
+    box-shadow:0 18px 44px rgba(23,18,60,.22), inset 0 1px 0 rgba(255,255,255,.5);
+    animation:mcb-rise .3s cubic-bezier(.2,.9,.3,1.15) both; }
+  @keyframes mcb-rise { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:none } }
+  @supports (backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px)) {
+    #${ROOT_ID} .mcb-panel { background:var(--panel);
+      -webkit-backdrop-filter:blur(28px) saturate(1.8); backdrop-filter:blur(28px) saturate(1.8); }
+  }
   #${ROOT_ID} .mcb-panel:empty::before { content:"The conversation will appear here as you talk…";
-    font:400 12px/1.4 inherit; color:var(--mut); }
+    font:400 12px/1.4 inherit; color:var(--panel-mut); }
   #${ROOT_ID} .mcb-line { display:block; }
-  #${ROOT_ID} .mcb-line + .mcb-line { margin-top:9px; padding-top:9px;
-    border-top:1px solid rgba(127,127,127,.14); }
+  #${ROOT_ID} .mcb-line + .mcb-line { margin-top:10px; padding-top:10px;
+    border-top:1px solid rgba(127,127,127,.16); }
   #${ROOT_ID} .mcb-chip { display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis;
     white-space:nowrap; vertical-align:middle; font:650 10.5px/1.1 inherit;
-    padding:3.5px 9px; border-radius:999px; margin-bottom:4px;
-    background:var(--fill); color:var(--mut); }
-  #${ROOT_ID} .mcb-line[data-who="bot"] .mcb-chip { background:rgba(108,71,255,.16); color:var(--c); }
-  #${ROOT_ID} .mcb-text { display:block; font:400 12.5px/1.45 inherit; color:var(--ink); overflow-wrap:break-word; }
+    padding:4px 9px; border-radius:999px; margin-bottom:4px;
+    background:rgba(120,120,128,.16); color:var(--panel-mut); }
+  #${ROOT_ID} .mcb-line[data-who="bot"] .mcb-chip { background:rgba(108,71,255,.18); color:var(--c); }
+  #${ROOT_ID} .mcb-text { display:block; font:400 13px/1.5 inherit; color:var(--panel-ink); overflow-wrap:break-word; }
 
-  #${ROOT_ID} .mcb-toast { max-width:min(300px, calc(100vw - 40px)); padding:9px 13px;
-    border-radius:14px; color:var(--err-ink); font:500 12px/1.4 inherit; }
-  #${ROOT_ID} .mcb-toast { background:var(--err-glass); }
+  #${ROOT_ID} .mcb-toast { max-width:min(300px, calc(100vw - 40px)); padding:10px 14px;
+    border-radius:14px; color:var(--err-ink); font:500 12px/1.4 inherit;
+    background:var(--err-glass); border:1px solid rgba(255,255,255,.35);
+    box-shadow:0 12px 30px rgba(23,18,60,.2); }
   @supports (backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px)) {
     #${ROOT_ID} .mcb-toast { -webkit-backdrop-filter:blur(20px) saturate(1.6); backdrop-filter:blur(20px) saturate(1.6); }
   }
   @media (prefers-reduced-motion: reduce) {
-    #${ROOT_ID} *, #${ROOT_ID} { animation:none!important; transition:none!important }
+    #${ROOT_ID} *, #${ROOT_ID} *::before, #${ROOT_ID} *::after, #${ROOT_ID} { animation:none!important; transition:none!important }
   }`;
 
 /**
