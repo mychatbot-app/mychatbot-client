@@ -119,6 +119,19 @@ if (bundle) {
   }
   check("bundle inlines its dependencies", !/from\s*["']@elevenlabs/.test(bundle));
   check("bundle carries no beacon", !/mcbEvent/.test(bundle));
+
+  // The JS minifies, but CSS lives in a template literal — so /* */ notes
+  // inside it ship verbatim to every page that embeds us. They were: 10
+  // comments, 1.5KB of design rationale, including one quoting the owner by
+  // date. Harmless in content, wrong in principle, and the same shape as a
+  // leak that mattered more elsewhere. Explanations belong in TS comments,
+  // which minification removes; this keeps them there.
+  const shippedComments = [...bundle.matchAll(/\/\*[\s\S]*?\*\//g)].map((m) => m[0]);
+  check(
+    `the bundle ships no comment text (${shippedComments.length} found)`,
+    shippedComments.length === 0,
+    shippedComments.map((c) => c.replace(/\s+/g, " ").slice(0, 70)).join(" | ").slice(0, 300),
+  );
 }
 
 console.log(failures === 0 ? "\nBROWSER EMBED OK" : `\nBROWSER EMBED FAILURES: ${failures}`);

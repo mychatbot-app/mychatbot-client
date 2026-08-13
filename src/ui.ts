@@ -92,16 +92,24 @@ const SKELETON = `
 // Media-query variables, NOT light-dark(): Safari <17.5 and several in-app
 // webviews drop every declaration using it. backdrop-filter carries an
 // @supports fallback to near-opaque surfaces.
+//
+// SPEAKER CHIPS get their own --chip-* variables rather than reusing --c and
+// --panel-mut. Those are tuned for white surfaces, and the transcript sheet
+// follows the visitor's OS: on the dark sheet the agent's name measured
+// 2.7:1 and the visitor's 5.6:1 (WCAG wants 4.5:1, and these are 10.5px
+// semi-bold NAMES — read, not glanced at). The dark block re-inks both to
+// 6.4:1 and 7.8:1 and lifts the tints so a pill still reads as a pill.
+//
+// Notes stay OUT of the CSS string: it is a template literal, so anything
+// between /* */ ships to every customer's page. That is also why the numbers
+// above live here — they were wrong in the first cut of this fix, and a
+// wrong number nobody can see is worse than none.
 const CSS = `
   #${ROOT_ID} {
     --c:#6C47FF; --c-soft:#8B6BFF; --c-deep:#4F2BD8; --c-glow:#A78BFF;
     --ok:#34D399; --warn:#FBBF24;
     --panel:rgba(255,255,255,.6); --panel-solid:rgba(255,255,255,.97);
     --panel-edge:rgba(255,255,255,.6); --panel-ink:#191925; --panel-mut:#5F5C72;
-    /* Speaker chips get their own colours because they are the one place the
-       accent sits ON the panel rather than beside it. --c is tuned for white
-       surfaces, so reusing it left "Nibir Assistant" as mid-purple text on a
-       dark sheet — legible in the mock, not on a phone at arm's length. */
     --chip-bg:rgba(120,120,128,.16); --chip-ink:var(--panel-mut);
     --chip-bot-bg:rgba(108,71,255,.18); --chip-bot-ink:var(--c);
     --err-ink:#B3261E; --err-glass:rgba(253,236,236,.78);
@@ -115,11 +123,6 @@ const CSS = `
     #${ROOT_ID} {
       --panel:rgba(30,28,42,.6); --panel-solid:rgba(30,28,42,.97);
       --panel-edge:rgba(255,255,255,.12); --panel-ink:#EFEDF8; --panel-mut:#A5A2BC;
-      /* Both chips carry NAMES — who is speaking — so they are read, not
-         glanced at, and they sit at 10.5px semi-bold. On the dark sheet the
-         light-surface values fell to roughly 3:1 and 2.4:1; these land near
-         11:1 and 7:1, and the tints lift a little so the pill still reads as
-         a pill (owner, 2026-08-13: "hard to read on the dark background"). */
       --chip-bg:rgba(255,255,255,.14); --chip-ink:#DCD9EC;
       --chip-bot-bg:rgba(139,107,255,.28); --chip-bot-ink:#C9B8FF;
       --err-ink:#F2B8B5; --err-glass:rgba(58,32,34,.66);
